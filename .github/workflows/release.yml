@@ -42,8 +42,7 @@ jobs:
 
   matrix-build-upload:
     permissions:
-      contents: read
-      packages: write
+      contents: write
     needs: create_release
     runs-on: ubuntu-latest
     strategy:
