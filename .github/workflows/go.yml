@@ -5,10 +5,14 @@ on:
     branches: [main]
     paths-ignore:
       - "**.md"
+    tags-ignore:
+      - "v*"
   pull_request:
     branches: [main]
     paths-ignore:
       - "**.md"
+    tags-ignore:
+      - "v*"
   workflow_call:
 
 jobs:

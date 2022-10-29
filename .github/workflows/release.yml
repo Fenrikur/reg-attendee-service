@@ -15,8 +15,11 @@ jobs:
   call_build_and_test:
     uses: ./.github/workflows/go.yml
 
+  call_codeql_analysis:
+    uses: ./.github/workflows/codeql-analysis.yml
+
   create_release:
-    needs: call_build_and_test
+    needs: [call_build_and_test, call_codeql_analysis]
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -71,12 +74,12 @@ jobs:
         working-directory: ./reg-attendee-service
 
       - name: Create release archive (tar.gz)
-        if: ${{ matrix.os }} != 'windows'
+        if: ${{ matrix.os != 'windows' }}
         run: tar -cvzf release.tar.gz target/* README.md LICENSE install.sh run-*.sh
         working-directory: ./reg-attendee-service
 
       - name: Upload release archive (tar.gz)
-        if: ${{ matrix.os }} != 'windows'
+        if: ${{ matrix.os != 'windows' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -87,17 +90,17 @@ jobs:
           asset_content_type: application/gzip
 
       - name: Create release archive (zip)
-        if: ${{ matrix.os }} == 'windows'
+        if: ${{ matrix.os == 'windows' }}
         run: zip -v release.zip target/* README.md LICENSE install.sh run-*.sh
         working-directory: ./reg-attendee-service
 
       - name: Upload release archive (zip)
-        if: ${{ matrix.os }} == 'windows'
+        if: ${{ matrix.os == 'windows' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./reg-attendee-service/target.zip
+          asset_path: ./reg-attendee-service/release.zip
           asset_name: reg-attendee-service.${{ matrix.os }}-${{ matrix.arch }}.zip
           asset_content_type: application/zip
