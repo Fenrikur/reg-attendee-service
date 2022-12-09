@@ -15,18 +15,22 @@ on:
       - "v*"
   workflow_call:
 
+env:
+  GO_VERSION: 1.19
+  BASE_DIRECTORY: ./reg-attendee-service
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
-          path: ./reg-attendee-service
+          path: ${{ env.BASE_DIRECTORY }}
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.19
+          go-version: ${{ env.GO_VERSION }}
 
       # START pact-1.88.84 has a syntax error
       # curl -L https://raw.githubusercontent.com/pact-foundation/pact-ruby-standalone/master/install.sh -o ./install-pact.sh &&
@@ -57,10 +61,10 @@ jobs:
 
       - name: Build
         run: go build -v ./...
-        working-directory: ./reg-attendee-service
+        working-directory: ${{ env.BASE_DIRECTORY }}
 
       - name: Checkout eurofurence/reg-attendee-transferclient for contract tests
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: eurofurence/reg-attendee-transferclient
           path: reg-attendee-transferclient
@@ -75,4 +79,4 @@ jobs:
 
       - name: Test
         run: go test -v ./...
-        working-directory: ./reg-attendee-service
+        working-directory: ${{ env.BASE_DIRECTORY }}
