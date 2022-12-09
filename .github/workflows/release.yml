@@ -10,16 +10,16 @@ env:
   SERVICE_NAME: reg-attendee-service
 
 jobs:
-  call_build_and_test:
-    uses: ./.github/workflows/go.yml
+  # call_build_and_test:
+  #   uses: ./.github/workflows/go.yml
 
-  call_codeql_analysis:
-    uses: ./.github/workflows/codeql-analysis.yml
+  # call_codeql_analysis:
+  #   uses: ./.github/workflows/codeql-analysis.yml
 
   matrix_build_upload:
     permissions:
       contents: write
-    needs: [call_build_and_test, call_codeql_analysis]
+    # needs: [call_build_and_test, call_codeql_analysis]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -90,8 +90,13 @@ jobs:
         uses: actions/download-artifact@v3
         id: download
         with:
-          path: artifacts
+          path: release-artifacts
+      - name: List directory
+        shell: bash
+        run: |-
+          ls -alR .
       - name: Create release
+        if: ${{ false }}
         uses: softprops/action-gh-release@v1
         id: create_release
         with:
