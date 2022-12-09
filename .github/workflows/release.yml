@@ -49,26 +49,24 @@ jobs:
 
       - name: Create release archive (tar.gz)
         if: ${{ matrix.os != 'windows' }}
-        run: tar -cvzf release.tar.gz target/* README.md LICENSE install.sh run-*.sh
+        run: tar -cvzf ${{ env.SERVICE_NAME }}.${{ matrix.os }}-${{ matrix.arch }}.tar.gz target/* README.md LICENSE install.sh run-*.sh
 
       - name: Upload release archive (tar.gz)
         if: ${{ matrix.os != 'windows' }}
         uses: actions/upload-artifact@v3
         with:
-          path: release.tar.gz
-          name: ${{ env.SERVICE_NAME }}.${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          path: ${{ env.SERVICE_NAME }}.${{ matrix.os }}-${{ matrix.arch }}.tar.gz
           if-no-files-found: warn
 
       - name: Create release archive (zip)
         if: ${{ matrix.os == 'windows' }}
-        run: zip -v release.zip target/* README.md LICENSE install.sh run-*.sh
+        run: zip -v ${{ env.SERVICE_NAME }}.${{ matrix.os }}-${{ matrix.arch }}.zip target/* README.md LICENSE install.sh run-*.sh
 
       - name: Upload release archive (zip)
         if: ${{ matrix.os == 'windows' }}
         uses: actions/upload-artifact@v3
         with:
-          path: release.zip
-          name: ${{ env.SERVICE_NAME }}.${{ matrix.os }}-${{ matrix.arch }}.zip
+          path: ${{ env.SERVICE_NAME }}.${{ matrix.os }}-${{ matrix.arch }}.zip
           if-no-files-found: warn
 
   create_release:
@@ -91,14 +89,8 @@ jobs:
         id: download
         with:
           path: release-artifacts
-      - name: List directory
-        shell: bash
-        run: |-
-          ls -alR .
       - name: Create release
-        if: ${{ false }}
         uses: softprops/action-gh-release@v1
-        id: create_release
         with:
           draft: false
           prerelease: false
