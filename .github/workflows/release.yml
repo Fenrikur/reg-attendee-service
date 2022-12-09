@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+env:
+  GO_VERSION: 1.19
+  SERVICE_NAME: reg-attendee-service
 
 jobs:
   call_build_and_test:
@@ -13,37 +16,10 @@ jobs:
   call_codeql_analysis:
     uses: ./.github/workflows/codeql-analysis.yml
 
-  create_release:
+  matrix_build_upload:
     permissions:
       contents: write
-      pull-requests: read
-      issues: read
     needs: [call_build_and_test, call_codeql_analysis]
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Release Changelog Builder
-        uses: mikepenz/release-changelog-builder-action@v3.4.0
-        id: build_changelog
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: Create release
-        uses: actions/create-release@v1
-        id: create_release
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          draft: false
-          prerelease: false
-          release_name: ${{ github.ref_name }}
-          tag_name: ${{ github.ref }}
-          body: ${{ steps.build_changelog.outputs.changelog }}
-
-  matrix-build-upload:
-    permissions:
-      contents: write
-    needs: create_release
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -58,50 +34,67 @@ jobs:
           - os: darwin
             arch: 386
     steps:
-      - uses: actions/checkout@v2
-        with:
-          path: ./reg-attendee-service
+      - uses: actions/checkout@v3
 
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.19
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Build
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
         run: mkdir -p target; go build -o target -v -x ./...
-        working-directory: ./reg-attendee-service
 
       - name: Create release archive (tar.gz)
         if: ${{ matrix.os != 'windows' }}
         run: tar -cvzf release.tar.gz target/* README.md LICENSE install.sh run-*.sh
-        working-directory: ./reg-attendee-service
 
       - name: Upload release archive (tar.gz)
         if: ${{ matrix.os != 'windows' }}
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+        uses: actions/upload-artifact@v3
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./reg-attendee-service/release.tar.gz
-          asset_name: reg-attendee-service.${{ matrix.os }}-${{ matrix.arch }}.tar.gz
-          asset_content_type: application/gzip
+          path: release.tar.gz
+          name: ${{ env.SERVICE_NAME }}.${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          if-no-files-found: warn
 
       - name: Create release archive (zip)
         if: ${{ matrix.os == 'windows' }}
         run: zip -v release.zip target/* README.md LICENSE install.sh run-*.sh
-        working-directory: ./reg-attendee-service
 
       - name: Upload release archive (zip)
         if: ${{ matrix.os == 'windows' }}
-        uses: actions/upload-release-asset@v1
+        uses: actions/upload-artifact@v3
+        with:
+          path: release.zip
+          name: ${{ env.SERVICE_NAME }}.${{ matrix.os }}-${{ matrix.arch }}.zip
+          if-no-files-found: warn
+
+  create_release:
+    permissions:
+      contents: write
+      pull-requests: read
+      issues: read
+    needs: matrix_build_upload
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Release Changelog Builder
+        uses: mikepenz/release-changelog-builder-action@v3.4.0
+        id: build_changelog
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v3
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ./reg-attendee-service/release.zip
-          asset_name: reg-attendee-service.${{ matrix.os }}-${{ matrix.arch }}.zip
-          asset_content_type: application/zip
+          path: artifacts
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          body: ${{ steps.build_changelog.outputs.changelog }}
+          files: artifacts/*
