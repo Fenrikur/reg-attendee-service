@@ -17,3 +17,4 @@ jobs:
     with:
       base-directory: ./reg-attendee-service
       pact-client-repo: eurofurence/reg-attendee-transferclient
+      pact-client-repo-path: reg-attendee-transferclient
